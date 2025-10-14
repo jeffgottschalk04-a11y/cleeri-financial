@@ -147,17 +147,18 @@ export default function CleeriFinanceDashboard() {
     return { year: yk, gmv, revenue };
   }), [providerByYear, avgGMVperProvByYear, brandsByYear, assumptions.brandGMVperMonth, assumptions.cleeriTakeRate]);
 
-  const subs = useMemo(() => YEARS.map((yk, i) => {
-    const yearIdx = i + 1; if ((assumptions.subStartsYear ?? 3) && yearIdx < (assumptions.subStartsYear ?? 3)) return 0;
-    const providers = providerByYear[i] ?? 0;
-    const paidPenRate = paidPen(yearIdx) ?? 0;
-    const planMix = yearIdx === 3 ? assumptions.planMixY3 : yearIdx === 4 ? assumptions.planMixY4 : assumptions.planMixY5;
-    const paid = Math.max(0, Math.round(providers * paidPenRate));
-    const pro = Math.max(0, Math.round(paid * (planMix.pro ?? 0)));
-    const plus = Math.max(0, paid - pro);
-    const mrr = pro * (assumptions.proPrice ?? 0) + plus * (assumptions.plusPrice ?? 0);
-    return mrr * 12;
-  }), [providerByYear, assumptions]);
+  const subs = useMemo(() => YEARS.map((_, i) => {
+  const yearIdx = i + 1; if ((assumptions.subStartsYear ?? 3) && yearIdx < (assumptions.subStartsYear ?? 3)) return 0;
+  const providers = providerByYear[i] ?? 0;
+  const paidPenRate = paidPen(yearIdx) ?? 0;
+  const planMix = yearIdx === 3 ? assumptions.planMixY3 : yearIdx === 4 ? assumptions.planMixY4 : assumptions.planMixY5;
+  const paid = Math.max(0, Math.round(providers * paidPenRate));
+  const pro = Math.max(0, Math.round(paid * (planMix.pro ?? 0)));
+  const plus = Math.max(0, paid - pro);
+  const mrr = pro * (assumptions.proPrice ?? 0) + plus * (assumptions.plusPrice ?? 0);
+  return mrr * 12;
+}), [providerByYear, assumptions]);
+
 
   const opexTotals: OpexYear[] = useMemo(() => {
     const empty: Record<string, number> = {};
