@@ -23,6 +23,7 @@ const YEARS: YearKey[] = ['Y1','Y2','Y3','Y4','Y5','Y6','Y7','Y8','Y9','Y10'];
 
 const TOTAL_SHARES = 20_000_000;
 const CLEERI_DECK_URL = import.meta.env.VITE_CLEERI_DECK_URL || '/cleeri-deck.pdf';
+const SHOW_SELF_TEST = (import.meta.env.VITE_SHOW_SELF_TEST === 'true');
 const STORAGE_KEY = 'cleeri-finance-state-v1';
 
 export default function CleeriFinanceDashboard() {
@@ -400,9 +401,11 @@ export default function CleeriFinanceDashboard() {
               <div className="text-xs text-slate-500 mt-2">Per‑share price by year: {safeShareInfo.perSharePrice.map(p => `$${(p ?? 0).toFixed(4)}`).join(" • ")}</div>
             </Card>
 
-            <Card title="SelfTest (sanity checks)">
-              <SelfTest providers={providerByYear} brands={brandsByYear} gmvs={avgGMVperProvByYear} opexTotals={opexTotals} pnl={pnl} valuations={selectedValuations} />
-            </Card>
+            {SHOW_SELF_TEST && (
+              <Card title="SelfTest (sanity checks)">
+                <SelfTest providers={providerByYear} brands={brandsByYear} gmvs={avgGMVperProvByYear} opexTotals={opexTotals} pnl={pnl} valuations={selectedValuations} />
+              </Card>
+            )}
           </div>
         )}
 
