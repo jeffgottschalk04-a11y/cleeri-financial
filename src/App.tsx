@@ -22,6 +22,7 @@ type YearKey = 'Y1'|'Y2'|'Y3'|'Y4'|'Y5'|'Y6'|'Y7'|'Y8'|'Y9'|'Y10';
 const YEARS: YearKey[] = ['Y1','Y2','Y3','Y4','Y5','Y6','Y7','Y8','Y9','Y10'];
 
 const TOTAL_SHARES = 20_000_000;
+const CLEERI_DECK_URL = import.meta.env.VITE_CLEERI_DECK_URL || '/cleeri-deck.pdf';
 const STORAGE_KEY = 'cleeri-finance-state-v1';
 
 export default function CleeriFinanceDashboard() {
@@ -290,7 +291,17 @@ export default function CleeriFinanceDashboard() {
         <header className="mb-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl md:text-3xl font-semibold">Cleeri • 10‑Year Finance & SAFE Dashboard</h1>
-            <div className="text-sm text-slate-500">Total Shares Issued: <span className="font-medium">{TOTAL_SHARES.toLocaleString()}</span></div>
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-slate-500">Total Shares Issued: <span className="font-medium">{TOTAL_SHARES.toLocaleString()}</span></div>
+              <a
+                href={CLEERI_DECK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-md border bg-slate-100 hover:bg-white text-sm"
+              >
+                View Cleeri Deck (PDF)
+              </a>
+            </div>
           </div>
           <div className="mt-4 flex flex-col gap-3">
             <TabBar label="Pages" tabs={["overview","pnl","assumptions","opex","safe"]} active={page} onChange={v=>setPage(v as any)} />
