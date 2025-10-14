@@ -446,8 +446,18 @@ export default function CleeriFinanceDashboard() {
                     </thead>
                     <tbody>
                       {entries.map(([k,v], i) => (
-                        <tr key={k} className="border-t" draggable onDragStart={()=>setDragIndex(i)} onDragOver={(e)=>{e.preventDefault();}} onDrop={()=>{ if(dragIndex!==null && dragIndex!==i) moveOrder(yk, dragIndex, i); setDragIndex(null); }} onDragEnd={()=>setDragIndex(null)}>
-                          <td className="py-2 pr-4 text-slate-400 cursor-grab">⋮⋮</td>
+                        <tr key={k} className="border-t" onDragOver={(e)=>{e.preventDefault();}} onDrop={()=>{ if(dragIndex!==null && dragIndex!==i) moveOrder(yk, dragIndex, i); setDragIndex(null); }}>
+                          <td className="py-2 pr-4 text-slate-400">
+                            <span
+                              className="cursor-grab inline-block"
+                              title="Drag to reorder"
+                              draggable
+                              onDragStart={()=>setDragIndex(i)}
+                              onDragEnd={()=>setDragIndex(null)}
+                            >
+                              ⋮⋮
+                            </span>
+                          </td>
                           <td className="py-2 pr-4">
                             <input className="rounded-md border px-2 py-1" defaultValue={k} onBlur={(e)=>renameOpexKey(yk, k, e.target.value)} />
                           </td>
