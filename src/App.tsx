@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { formatCurrency, currency } from "./utils/format";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 
 /**
@@ -13,8 +14,6 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContai
  */
 
 // ---------- Utils & Types
-const currency = (n: number) => n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-const formatCurrency = (n: number, digits = 0): string => (Number.isFinite(n) ? n.toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: digits, maximumFractionDigits: digits }) : formatCurrency(0, digits));
 
 interface SafeNote { name: string; amount: number; cap: number; }
 interface OpexYear { label: string; total: number; breakdown: Record<string, number>; }
@@ -347,7 +346,7 @@ export default function CleeriFinanceDashboard() {
                     <BarChart data={valuationChart}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="year" />
-                      <YAxis tickFormatter={(v) => `${(v/1_000_000).toLocaleString(undefined, {maximumFractionDigits:0})}M`} />
+                      <YAxis tickFormatter={(v) => `$${(v/1_000_000).toLocaleString(undefined, {maximumFractionDigits:0})}M`} />
                       <Tooltip formatter={(v: any) => currency(v)} />
                       <Legend />
                       <Bar dataKey="Valuation" fill="#6366f1" />
@@ -369,7 +368,7 @@ export default function CleeriFinanceDashboard() {
                   <LineChart data={revenueChart}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="year" />
-                    <YAxis tickFormatter={(v) => `${(v/1_000_000).toLocaleString(undefined, {maximumFractionDigits:1})}M`} />
+                    <YAxis tickFormatter={(v) => `$${(v/1_000_000).toLocaleString(undefined, {maximumFractionDigits:1})}M`} />
                     <Tooltip formatter={(v: any) => currency(v)} />
                     <Legend />
                     <Line type="monotone" dataKey="Revenue" stroke="#0ea5e9" strokeWidth={2} />
@@ -385,7 +384,7 @@ export default function CleeriFinanceDashboard() {
                   <BarChart data={valuationChart}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="year" />
-                    <YAxis tickFormatter={(v) => `${(v/1_000_000).toLocaleString(undefined, {maximumFractionDigits:0})}M`} />
+                    <YAxis tickFormatter={(v) => `$${(v/1_000_000).toLocaleString(undefined, {maximumFractionDigits:0})}M`} />
                     <Tooltip formatter={(v: any) => currency(v)} />
                     <Legend />
                     <Bar dataKey="Valuation" fill="#6366f1" />
@@ -466,7 +465,10 @@ export default function CleeriFinanceDashboard() {
                             <input className="rounded-md border px-2 py-1" defaultValue={k} onBlur={(e)=>renameOpexKey(yk, k, e.target.value)} />
                           </td>
                           <td className="py-2 pr-4">
-                            <input type="number" step={100} className="rounded-md border px-2 py-1" value={v} onChange={(e)=>setOpexAmount(yk, k, Number(e.target.value))} />
+                            <div className="flex items-center gap-2">
+                              <CurrencyInput value={v} onChange={(n)=>setOpexAmount(yk, k, n)} />
+                              <div className="text-sm text-slate-600 w-40 text-right select-none">{formatCurrency(v, 0)}</div>
+                            </div>
                           </td>
                           <td className="py-2 pr-4">
                             <button className="text-rose-600 hover:underline" onClick={()=>deleteOpexLine(yk, k)}>Delete</button>
@@ -657,11 +659,34 @@ function NumberInput({ label, value, onChange, compact, hint }: { label: string;
 }
 
 function MoneyInput({ label, value, onChange, compact, hint }: { label: string; value: number; onChange: (v: number) => void; compact?: boolean; hint?: string }) {
+  // Currency-aware input that shows formatted value. We'll render a text input that
+  // displays the formatted currency and parses digits back to a number for onChange.
   return (
     <label className={`block ${compact ? "text-xs" : "text-sm"}`}>
       <span className="block text-slate-600 mb-1 flex items-center">{label}{hint ? <Help text={hint} /> : null}</span>
-      <input type="number" step="100" className="w-full rounded-md border px-2 py-1" value={value} onChange={(e) => onChange(Number(e.target.value))} />
+      <div className="flex items-center gap-2">
+        <CurrencyInput value={value} onChange={onChange} />
+        <div className="text-sm text-slate-600 w-40 text-right select-none">{formatCurrency(value, (Math.round((Math.abs(value) - Math.floor(Math.abs(value))) * 100) !== 0) ? 2 : 0)}</div>
+      </div>
     </label>
+  );
+}
+
+function CurrencyInput({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  // Display formatted currency in the input. On change, strip non-numeric chars and
+  // notify parent with the parsed number. This keeps the input showing $ and commas.
+  const displayDigits = (Math.round((Math.abs(value) - Math.floor(Math.abs(value))) * 100) !== 0) ? 2 : 0;
+  const display = formatCurrency(value, displayDigits);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // remove anything that's not digit, dot, or minus
+    const raw = e.target.value.replace(/[^0-9.-]/g, '');
+    const parsed = Number(raw);
+    onChange(Number.isFinite(parsed) ? parsed : 0);
+  };
+
+  return (
+    <input type="text" inputMode="decimal" className="w-full rounded-md border px-2 py-1" value={display} onChange={handleChange} />
   );
 }
 
