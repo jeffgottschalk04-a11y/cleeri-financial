@@ -14,6 +14,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContai
 
 // ---------- Utils & Types
 const currency = (n: number) => n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+const formatCurrency = (n: number, digits = 0): string => (Number.isFinite(n) ? n.toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: digits, maximumFractionDigits: digits }) : formatCurrency(0, digits));
 
 interface SafeNote { name: string; amount: number; cap: number; }
 interface OpexYear { label: string; total: number; breakdown: Record<string, number>; }
@@ -346,14 +347,14 @@ export default function CleeriFinanceDashboard() {
                     <BarChart data={valuationChart}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="year" />
-                      <YAxis tickFormatter={(v) => `$${(v/1_000_000).toFixed(0)}M`} />
+                      <YAxis tickFormatter={(v) => `${(v/1_000_000).toLocaleString(undefined, {maximumFractionDigits:0})}M`} />
                       <Tooltip formatter={(v: any) => currency(v)} />
                       <Legend />
                       <Bar dataKey="Valuation" fill="#6366f1" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="text-xs text-slate-500 mt-2">Per‑share price by year: {safeShareInfo.perSharePrice.map(p => `$${(p ?? 0).toFixed(4)}`).join(" • ")}</div>
+                <div className="text-xs text-slate-500 mt-2">Per‑share price by year: {safeShareInfo.perSharePrice.map(p => formatCurrency(p ?? 0, 4)).join(" • ")}</div>
               </Card>
             </section>
           </div>
@@ -368,7 +369,7 @@ export default function CleeriFinanceDashboard() {
                   <LineChart data={revenueChart}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="year" />
-                    <YAxis tickFormatter={(v) => `$${(v/1_000_000).toFixed(1)}M`} />
+                    <YAxis tickFormatter={(v) => `${(v/1_000_000).toLocaleString(undefined, {maximumFractionDigits:1})}M`} />
                     <Tooltip formatter={(v: any) => currency(v)} />
                     <Legend />
                     <Line type="monotone" dataKey="Revenue" stroke="#0ea5e9" strokeWidth={2} />
@@ -384,14 +385,14 @@ export default function CleeriFinanceDashboard() {
                   <BarChart data={valuationChart}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="year" />
-                    <YAxis tickFormatter={(v) => `$${(v/1_000_000).toFixed(0)}M`} />
+                    <YAxis tickFormatter={(v) => `${(v/1_000_000).toLocaleString(undefined, {maximumFractionDigits:0})}M`} />
                     <Tooltip formatter={(v: any) => currency(v)} />
                     <Legend />
                     <Bar dataKey="Valuation" fill="#6366f1" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="text-xs text-slate-500 mt-2">Per‑share price by year: {safeShareInfo.perSharePrice.map(p => `$${(p ?? 0).toFixed(4)}`).join(" • ")}</div>
+              <div className="text-xs text-slate-500 mt-2">Per‑share price by year: {safeShareInfo.perSharePrice.map(p => formatCurrency(p ?? 0, 4)).join(" • ")}</div>
             </Card>
 
             {/* SelfTest (sanity checks) removed from overview per request */}
@@ -531,7 +532,7 @@ export default function CleeriFinanceDashboard() {
                       ))}
                     </div>
                   )}
-                  <div className="text-xs text-slate-500 mt-2">Per‑share (Y1→Y10): {safeShareInfo.perSharePrice.map(p => `$${(p ?? 0).toFixed(4)}`).join(" • ")}</div>
+                  <div className="text-xs text-slate-500 mt-2">Per‑share (Y1→Y10): {safeShareInfo.perSharePrice.map(p => formatCurrency(p ?? 0, 4)).join(" • ")}</div>
                 </div>
               </Card>
             )}
@@ -707,7 +708,7 @@ function StageCalculator({ safes, years, onApply, selectedValuations, linkedYear
             </div>
             <div className="rounded-lg border p-3 bg-white">
               <div className="text-slate-500">Per‑Share Price</div>
-              <div className="text-lg font-semibold">${autoPerShare.toFixed(4)}</div>
+              <div className="text-lg font-semibold">{formatCurrency(autoPerShare, 4)}</div>
               <div className="text-xs text-slate-500">Using {TOTAL_SHARES.toLocaleString()} total shares</div>
             </div>
             <div>
@@ -753,7 +754,7 @@ function StageCalculator({ safes, years, onApply, selectedValuations, linkedYear
           </div>
           <div className="grid grid-cols-3 gap-4 text-sm items-end">
             <div className="rounded-lg border p-3 bg-white"><div className="text-slate-500">Implied Valuation</div><div className="text-lg font-semibold">{currency(impliedValuation)}</div></div>
-            <div className="rounded-lg border p-3 bg-white"><div className="text-slate-500">Per‑Share Price</div><div className="text-lg font-semibold">${impliedPerShare.toFixed(4)}</div></div>
+            <div className="rounded-lg border p-3 bg-white"><div className="text-slate-500">Per‑Share Price</div><div className="text-lg font-semibold">{formatCurrency(impliedPerShare, 4)}</div></div>
             <div>
               <div className="text-xs text-slate-600 mb-1">Apply to Year</div>
               <select className="rounded-md border px-2 py-1" value={manualYearIdx} onChange={e=>setManualYearIdx(Number(e.target.value))}>
