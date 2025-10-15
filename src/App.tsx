@@ -466,7 +466,7 @@ export default function CleeriFinanceDashboard() {
                           </td>
                           <td className="py-2 pr-4">
                             <div className="flex items-center gap-2">
-                              <input type="number" step={100} className="rounded-md border px-2 py-1" value={v} onChange={(e)=>setOpexAmount(yk, k, Number(e.target.value))} />
+                              <CurrencyInput value={v} onChange={(n)=>setOpexAmount(yk, k, n)} />
                               <div className="text-sm text-slate-600 w-40 text-right select-none">{formatCurrency(v, 0)}</div>
                             </div>
                           </td>
@@ -659,17 +659,34 @@ function NumberInput({ label, value, onChange, compact, hint }: { label: string;
 }
 
 function MoneyInput({ label, value, onChange, compact, hint }: { label: string; value: number; onChange: (v: number) => void; compact?: boolean; hint?: string }) {
-  // show cents when value has fractional component (e.g., 9.99)
-  const hasCents = Math.round((Math.abs(value) - Math.floor(Math.abs(value))) * 100) !== 0;
-  const digits = hasCents ? 2 : 0;
+  // Currency-aware input that shows formatted value. We'll render a text input that
+  // displays the formatted currency and parses digits back to a number for onChange.
   return (
     <label className={`block ${compact ? "text-xs" : "text-sm"}`}>
       <span className="block text-slate-600 mb-1 flex items-center">{label}{hint ? <Help text={hint} /> : null}</span>
       <div className="flex items-center gap-2">
-        <input type="number" step="100" className="w-full rounded-md border px-2 py-1" value={value} onChange={(e) => onChange(Number(e.target.value))} />
-        <div className="text-sm text-slate-600 w-40 text-right select-none">{formatCurrency(value, digits)}</div>
+        <CurrencyInput value={value} onChange={onChange} />
+        <div className="text-sm text-slate-600 w-40 text-right select-none">{formatCurrency(value, (Math.round((Math.abs(value) - Math.floor(Math.abs(value))) * 100) !== 0) ? 2 : 0)}</div>
       </div>
     </label>
+  );
+}
+
+function CurrencyInput({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  // Display formatted currency in the input. On change, strip non-numeric chars and
+  // notify parent with the parsed number. This keeps the input showing $ and commas.
+  const displayDigits = (Math.round((Math.abs(value) - Math.floor(Math.abs(value))) * 100) !== 0) ? 2 : 0;
+  const display = formatCurrency(value, displayDigits);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // remove anything that's not digit, dot, or minus
+    const raw = e.target.value.replace(/[^0-9.-]/g, '');
+    const parsed = Number(raw);
+    onChange(Number.isFinite(parsed) ? parsed : 0);
+  };
+
+  return (
+    <input type="text" inputMode="decimal" className="w-full rounded-md border px-2 py-1" value={display} onChange={handleChange} />
   );
 }
 
