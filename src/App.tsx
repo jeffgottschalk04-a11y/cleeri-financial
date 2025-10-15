@@ -296,6 +296,11 @@ export default function CleeriFinanceDashboard() {
             <TabBar label="Pages" tabs={["overview","pnl","assumptions","opex","safe"]} active={page} onChange={v=>setPage(v as any)} />
           </div>
         </header>
+        
+        {/* Top actions: Cleeri deck button (links to public/cleeri-deck.pdf) */}
+        <div className="mb-6">
+          <a href="/cleeri-deck.pdf" target="_blank" rel="noopener noreferrer" className="inline-block px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">View Cleeri Deck</a>
+        </div>
 
         {/* ASSUMPTIONS */}
         {page === 'assumptions' && (
@@ -389,9 +394,7 @@ export default function CleeriFinanceDashboard() {
               <div className="text-xs text-slate-500 mt-2">Per‑share price by year: {safeShareInfo.perSharePrice.map(p => `$${(p ?? 0).toFixed(4)}`).join(" • ")}</div>
             </Card>
 
-            <Card title="SelfTest (sanity checks)">
-              <SelfTest providers={providerByYear} brands={brandsByYear} gmvs={avgGMVperProvByYear} opexTotals={opexTotals} pnl={pnl} valuations={selectedValuations} />
-            </Card>
+            {/* SelfTest (sanity checks) removed from overview per request */}
           </div>
         )}
 
@@ -802,20 +805,5 @@ function StageCalculator({ safes, years, onApply, selectedValuations, linkedYear
 }
 
 // ---------- Lightweight self-test component (acts like test cases)
-function SelfTest({ providers, brands, gmvs, opexTotals, pnl, valuations }:{ providers:number[]; brands:number[]; gmvs:number[]; opexTotals:OpexYear[]; pnl:{label:string;revenue:number;opex:number;profit:number}[]; valuations:number[]; }) {
-  const tests: {name:string; pass:boolean; detail?:string}[] = [];
-  const lenOK = providers.length===10 && brands.length===10 && gmvs.length===10 && opexTotals.length===10 && pnl.length===10 && valuations.length===10;
-  tests.push({ name: 'Arrays are all length 10', pass: lenOK, detail: `${providers.length}/${brands.length}/${gmvs.length}/${opexTotals.length}/${pnl.length}/${valuations.length}`});
-  tests.push({ name: 'No undefined opexTotals[i].total', pass: opexTotals.every(o => typeof o.total === 'number') });
-  tests.push({ name: 'No NaN in P&L rows', pass: pnl.every(r => isFinite(r.revenue) && isFinite(r.opex) && isFinite(r.profit)) });
-  const anyFail = tests.some(t=>!t.pass);
-  return (
-    <div className={`rounded-lg border p-3 ${anyFail ? 'border-rose-300 bg-rose-50' : 'border-emerald-300 bg-emerald-50'}`}>
-      <div className="font-medium mb-2">{anyFail ? 'SelfTest: Issues found' : 'SelfTest: All checks passed'}</div>
-      <ul className="list-disc pl-5 text-sm">
-        {tests.map((t,i)=>(<li key={i} className={t.pass ? 'text-emerald-700' : 'text-rose-700'}>{t.pass ? '✔︎' : '✖︎'} {t.name}{t.detail ? ` — ${t.detail}` : ''}</li>))}
-      </ul>
-    </div>
-  );
-}
+// SelfTest component removed — sanity checks hidden per user request
 
