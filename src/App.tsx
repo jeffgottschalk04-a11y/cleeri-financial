@@ -203,7 +203,7 @@ export default function CleeriFinanceDashboard() {
   }, [assumptions.safes, selectedValuations]);
 
   // ---------- Charts
-  const revenueChart = pnl.map(r => ({ year: r.label, Revenue: Math.round(r.revenue), Opex: Math.round(r.opex), Profit: Math.round(r.profit) }));
+  const revenueChart = pnl.map(r => ({ year: r.label, Revenue: Math.round(r.revenue), Expenses: Math.round(r.opex), Profit: Math.round(r.profit) }));
   const valuationChart = selectedValuations.map((v, i) => ({ year: YEARS[i], Valuation: v }));
 
   // ---------- State Updaters / Mutators
@@ -284,6 +284,23 @@ export default function CleeriFinanceDashboard() {
   function deleteOpexLine(yearKey: YearKey, key: string) {
     mutateOpex(yearKey, (obj) => { const { [key]: _, ...rest } = obj; return rest; });
     setAssumptions(prev => { const copy: any = JSON.parse(JSON.stringify(prev)); const arr: string[] = (copy.opexOrder?.[yearKey] || []).filter((k:string)=>k!==key); copy.opexOrder = { ...(copy.opexOrder||{}), [yearKey]: arr }; return copy; });
+  }
+
+  function duplicateOpexLine(yearKey: YearKey, key: string) {
+    const src = (assumptions.opex?.[yearKey] || {})[key] ?? 0;
+    const newKeyBase = `${key} copy`;
+    const newKey = uniqueKey(yearKey, newKeyBase);
+    mutateOpex(yearKey, (obj) => ({ ...obj, [newKey]: src }));
+    // insert new key after the original in the order (or append)
+    setTimeout(() => {
+      const keys = getOrderedEntries(yearKey).map(([k]) => k);
+      const idx = keys.indexOf(key);
+      if (!keys.includes(newKey)) {
+        if (idx >= 0) keys.splice(idx+1, 0, newKey);
+        else keys.push(newKey);
+      }
+      setOrder(yearKey, keys);
+    });
   }
 
   function renameOpexKey(yearKey: YearKey, oldKey: string, newKey: string) {
@@ -374,7 +391,7 @@ export default function CleeriFinanceDashboard() {
         {/* OVERVIEW */}
         {page === 'overview' && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card title="Revenue vs OPEX vs Profit (Y1–Y10)">
+            <Card title="Revenue vs Expenses vs Profit (Y1–Y10)">
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={revenueChart}>
@@ -384,7 +401,7 @@ export default function CleeriFinanceDashboard() {
                     <Tooltip formatter={(v: any) => currency(v)} />
                     <Legend />
                     <Line type="monotone" dataKey="Revenue" stroke="#0ea5e9" strokeWidth={2} />
-                    <Line type="monotone" dataKey="Opex" stroke="#f59e0b" strokeWidth={2} />
+                    <Line type="monotone" dataKey="Expenses" stroke="#f59e0b" strokeWidth={2} />
                     <Line type="monotone" dataKey="Profit" stroke="#10b981" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -421,7 +438,7 @@ export default function CleeriFinanceDashboard() {
                     <th className="py-2 pr-4">Exchange Rev</th>
                     <th className="py-2 pr-4">Subscription Rev</th>
                     <th className="py-2 pr-4">Total Revenue</th>
-                    <th className="py-2 pr-4">OPEX</th>
+                    <th className="py-2 pr-4">Expenses</th>
                     <th className="py-2 pr-4">Profit</th>
                   </tr>
                 </thead>
@@ -442,9 +459,9 @@ export default function CleeriFinanceDashboard() {
           </Card>
         )}
 
-        {/* OPEX */}
+        {/* OPEX (displayed as Expenses) */}
         {page === 'opex' && (
-          <Card title="Annual OPEX (edit per year)">
+          <Card title="Annual Expenses (edit per year)">
             <YearTabs tabs={YEARS} active={opexTab} onChange={(t)=>setOpexTab(t as YearKey)} />
             {(() => {
               const yk = opexTab as YearKey; const entries = getOrderedEntries(yk);
@@ -480,6 +497,7 @@ export default function CleeriFinanceDashboard() {
                             <input type="number" step={100} className="rounded-md border px-2 py-1" value={v} onChange={(e)=>setOpexAmount(yk, k, Number(e.target.value))} />
                           </td>
                           <td className="py-2 pr-4">
+                            <button className="mr-3 text-sky-600 hover:underline" onClick={()=>duplicateOpexLine(yk, k)}>Duplicate</button>
                             <button className="text-rose-600 hover:underline" onClick={()=>deleteOpexLine(yk, k)}>Delete</button>
                           </td>
                         </tr>
@@ -607,9 +625,12 @@ function TabBar({ label, tabs, active, onChange }: { label: string; tabs: string
     <div className="w-full">
       <div className="mb-2 text-xs uppercase tracking-wide text-slate-500">{label}</div>
       <div className="flex flex-wrap gap-2">
-        {tabs.map(t => (
-          <button key={t} onClick={()=>onChange(t)} className={`px-3 py-2 rounded-lg border text-sm ${active===t? 'bg-white shadow-sm':'bg-slate-100 hover:bg-white'}`}>{t}</button>
-        ))}
+        {tabs.map(t => {
+          const display = t === 'opex' ? 'Expenses' : t;
+          return (
+            <button key={t} onClick={()=>onChange(t)} className={`px-3 py-2 rounded-lg border text-sm ${active===t? 'bg-white shadow-sm':'bg-slate-100 hover:bg-white'}`}>{display}</button>
+          );
+        })}
       </div>
     </div>
   );
