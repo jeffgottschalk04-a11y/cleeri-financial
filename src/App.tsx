@@ -504,7 +504,7 @@ export default function CleeriFinanceDashboard() {
                 <div className="space-y-3">
                   {assumptions.safes.map((s, idx) => (
                     <div key={idx} className="rounded-lg border bg-white p-3 space-y-2">
-                      <div className="text-sm font-medium">{s.name}</div>
+                      <div className="text-sm font-medium">{`Investor ${idx + 1}`}</div>
                       <div className="grid grid-cols-2 gap-3">
                         <MoneyInput label="Amount" value={s.amount} onChange={v => updateNested(`safes.${idx}.amount`, v)} />
                         <MoneyInput label="Cap" value={s.cap} onChange={v => updateNested(`safes.${idx}.cap`, v)} />
@@ -564,8 +564,8 @@ export default function CleeriFinanceDashboard() {
                         {assumptions.safes.map((s, i) => {
                           const shares = Math.round((s.amount / s.cap) * TOTAL_SHARES);
                           return (
-                            <tr key={s.name} className="border-t">
-                              <td className="py-2 pr-4 font-medium">{s.name}</td>
+                            <tr key={i} className="border-t">
+                              <td className="py-2 pr-4 font-medium">{`Investor ${i + 1}`}</td>
                               {safeShareInfo.valuesByYear[i].map((val, idx) => (
                                 <td key={idx} className="py-2 pr-4">{currency(val)}</td>
                               ))}
@@ -741,11 +741,11 @@ function StageCalculator({ safes, years, onApply, selectedValuations, linkedYear
                 </tr>
               </thead>
               <tbody>
-                {safes.map(s => {
+                {safes.map((s, idx) => {
                   const shares = (s.amount / s.cap) * TOTAL_SHARES;
                   return (
-                    <tr key={s.name} className="border-t">
-                      <td className="py-2 pr-4 font-medium">{s.name}</td>
+                    <tr key={idx} className="border-t">
+                      <td className="py-2 pr-4 font-medium">{`Investor ${idx + 1}`}</td>
                       <td className="py-2 pr-4">{Math.round(shares).toLocaleString()}</td>
                       <td className="py-2 pr-4">{currency(shares * autoPerShare)}</td>
                     </tr>
@@ -796,12 +796,12 @@ function StageCalculator({ safes, years, onApply, selectedValuations, linkedYear
                 </tr>
               </thead>
               <tbody>
-                {safes.map(s => {
+                {safes.map((s, idx) => {
                   const shares = (s.amount / s.cap) * TOTAL_SHARES;
                   const perShare = (selectedValuations[manualYearIdx] ?? 0) / TOTAL_SHARES;
                   return (
-                    <tr key={s.name} className="border-t">
-                      <td className="py-2 pr-4 font-medium">{s.name}</td>
+                    <tr key={idx} className="border-t">
+                      <td className="py-2 pr-4 font-medium">{`Investor ${idx + 1}`}</td>
                       <td className="py-2 pr-4">{Math.round(shares).toLocaleString()}</td>
                       <td className="py-2 pr-4">{currency(shares * perShare)}</td>
                     </tr>
