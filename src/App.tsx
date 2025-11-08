@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
+import { loadAssumptions, saveAssumptions } from "./lib/db";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 
 /**
@@ -101,24 +102,70 @@ export default function CleeriFinanceDashboard() {
     revenueMultiples: [10, 9, 8, 7, 6, 6, 5.5, 5, 4.5, 4],
   });
 
-  // ---------- Persistence
-  React.useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setAssumptions((prev:any) => ({
-          ...prev,
-          ...parsed,
-          opex: { ...prev.opex, ...(parsed?.opex||{}) },
-          opexOrder: { ...prev.opexOrder, ...(parsed?.opexOrder||{}) },
-        }));
+  // ---------- Persistence (localStorage fallback, Supabase when configured)
+  const [saveStatus, setSaveStatus] = useState<'idle'|'saving'|'saved'|'error'>('idle');
+  const saveTimer = useRef<number | null>(null);
+
+  // Load on mount: prefer Supabase via helper, fall back to localStorage
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const parsed = await loadAssumptions();
+        if (parsed && mounted) {
+          setAssumptions((prev:any) => ({
+            ...prev,
+            ...parsed,
+            opex: { ...prev.opex, ...(parsed?.opex||{}) },
+            opexOrder: { ...prev.opexOrder, ...(parsed?.opexOrder||{}) },
+          }));
+          return;
+        }
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw && mounted) {
+          const p = JSON.parse(raw);
+          setAssumptions((prev:any) => ({
+            ...prev,
+            ...p,
+            opex: { ...prev.opex, ...(p?.opex||{}) },
+            opexOrder: { ...prev.opexOrder, ...(p?.opexOrder||{}) },
+          }));
+        }
+      } catch (e) {
+        /* ignore load errors */
       }
-    } catch {}
+    })();
+    return () => { mounted = false; };
   }, []);
 
-  React.useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); } catch {}
+  // Debounced save: write to Supabase via helper when available, otherwise localStorage.
+  useEffect(() => {
+    // clear any pending timer
+    if (saveTimer.current) {
+      window.clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    setSaveStatus('saving');
+    // debounce writes by 1s
+    saveTimer.current = window.setTimeout(async () => {
+      try {
+        const res = await saveAssumptions(assumptions);
+        if (res === null) {
+          // saveAssumptions returns null when no supabase client; fall back to localStorage
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); setSaveStatus('saved'); }
+          catch { setSaveStatus('error'); }
+        } else if ((res as any).error) {
+          // supabase error
+          setSaveStatus('error');
+        } else {
+          setSaveStatus('saved');
+        }
+      } catch (e) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); setSaveStatus('saved'); } catch { setSaveStatus('error'); }
+      }
+      saveTimer.current = null;
+    }, 1000) as unknown as number;
+    return () => { if (saveTimer.current) { window.clearTimeout(saveTimer.current); saveTimer.current = null; } };
   }, [assumptions]);
 
   // ---------- Derived Helpers
@@ -319,7 +366,11 @@ export default function CleeriFinanceDashboard() {
         <header className="mb-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl md:text-3xl font-semibold">Cleeri • 10‑Year Finance & SAFE Dashboard</h1>
-            <div className="text-sm text-slate-500">Total Shares Issued: <span className="font-medium">{TOTAL_SHARES.toLocaleString()}</span></div>
+            <div className="text-sm text-slate-500">Total Shares Issued: <span className="font-medium">{TOTAL_SHARES.toLocaleString()}</span>
+              <span className="ml-3 text-xs text-slate-400">
+                {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Save failed' : ''}
+              </span>
+            </div>
           </div>
           <div className="mt-4 flex flex-col gap-3">
             <TabBar label="Pages" tabs={["overview","pnl","assumptions","opex","safe"]} active={page} onChange={v=>setPage(v as any)} />

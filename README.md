@@ -71,3 +71,26 @@ export default defineConfig([
   },
 ])
 ```
+
+## Supabase persistence (assumptions)
+
+This project can persist the in-app `assumptions` JSON to a Supabase Postgres table. The repository includes a migration at `db/migrations/001_create_assumptions.sql` that creates a single-row JSON storage table named `public.assumptions` (id text primary key, data jsonb).
+
+Quick steps to enable persistence:
+
+1. Create a local `.env` by copying `.env.example` and filling in your Supabase URL and anon key. Do NOT commit the `.env` file.
+
+  cp .env.example .env
+  # edit .env and paste your values
+
+2. Run the migration in your Supabase project:
+
+  - Open your Supabase project → SQL Editor → paste the contents of `db/migrations/001_create_assumptions.sql` and Run.
+  - Or use the supabase CLI / psql with your DB connection string.
+
+3. (Optional) Add the same `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` variables to your Vercel Project Settings → Environment Variables (Preview/Production) so the deployed site can read and write the DB.
+
+4. Start the app locally (with the filled `.env`) and verify the header shows "Saving…" when you edit assumptions, then "Saved" after a second.
+
+If you prefer an explicit migration tool (Flyway, sqitch, or supabase migrations), adapt the SQL file accordingly — the repository migration is intentionally small and runnable in the Supabase SQL editor.
+
