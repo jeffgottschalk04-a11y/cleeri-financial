@@ -61,13 +61,13 @@ export default function CleeriFinanceDashboard() {
     planMixY4: { pro: 0.7, plus: 0.3 },
     planMixY5: { pro: 0.6, plus: 0.4 },
 
-    // OPEX (populated from Cleeri 10-Year OPEX Forecast PDF)
+    // OPEX defaults — leave Y1–Y5 empty so DB values are the source of truth
     opex: {
-      Y1:  { Engineering_Product: 120000, Design_UX_QA: 40000, Marketing_and_Customer_Acquisition: 60000, Sales_and_Business_Development: 30000, General_and_Administrative: 25000, Legal_Compliance_Accounting: 10000, Hosting_Infrastructure_DevOps: 15000, Office_Rent_Utilities: 12000, Software_Licenses_Tools: 8000, Travel_Conferences_Events: 5000, Customer_Support_Success: 15000 },
-      Y2:  { Engineering_Product: 240000, Design_UX_QA: 80000, Marketing_and_Customer_Acquisition: 120000, Sales_and_Business_Development: 60000, General_and_Administrative: 50000, Legal_Compliance_Accounting: 20000, Hosting_Infrastructure_DevOps: 30000, Office_Rent_Utilities: 24000, Software_Licenses_Tools: 16000, Travel_Conferences_Events: 10000, Customer_Support_Success: 30000 },
-      Y3:  { Engineering_Product: 420000, Design_UX_QA: 140000, Marketing_and_Customer_Acquisition: 240000, Sales_and_Business_Development: 120000, General_and_Administrative: 100000, Legal_Compliance_Accounting: 40000, Hosting_Infrastructure_DevOps: 60000, Office_Rent_Utilities: 48000, Software_Licenses_Tools: 32000, Travel_Conferences_Events: 20000, Customer_Support_Success: 60000 },
-      Y4:  { Engineering_Product: 720000, Design_UX_QA: 240000, Marketing_and_Customer_Acquisition: 500000, Sales_and_Business_Development: 300000, General_and_Administrative: 180000, Legal_Compliance_Accounting: 80000, Hosting_Infrastructure_DevOps: 120000, Office_Rent_Utilities: 72000, Software_Licenses_Tools: 64000, Travel_Conferences_Events: 40000, Customer_Support_Success: 120000 },
-      Y5:  { Engineering_Product: 1150000, Design_UX_QA: 400000, Marketing_and_Customer_Acquisition: 1200000, Sales_and_Business_Development: 600000, General_and_Administrative: 300000, Legal_Compliance_Accounting: 150000, Hosting_Infrastructure_DevOps: 240000, Office_Rent_Utilities: 120000, Software_Licenses_Tools: 120000, Travel_Conferences_Events: 80000, Customer_Support_Success: 240000 },
+      Y1:  {},
+      Y2:  {},
+      Y3:  {},
+      Y4:  {},
+      Y5:  {},
       Y6:  { Engineering_Product: 1750000, Design_UX_QA: 600000, Marketing_and_Customer_Acquisition: 2500000, Sales_and_Business_Development: 1200000, General_and_Administrative: 500000, Legal_Compliance_Accounting: 250000, Hosting_Infrastructure_DevOps: 450000, Office_Rent_Utilities: 180000, Software_Licenses_Tools: 200000, Travel_Conferences_Events: 150000, Customer_Support_Success: 450000 },
       Y7:  { Engineering_Product: 2400000, Design_UX_QA: 840000, Marketing_and_Customer_Acquisition: 4500000, Sales_and_Business_Development: 2000000, General_and_Administrative: 750000, Legal_Compliance_Accounting: 400000, Hosting_Infrastructure_DevOps: 800000, Office_Rent_Utilities: 240000, Software_Licenses_Tools: 300000, Travel_Conferences_Events: 250000, Customer_Support_Success: 800000 },
       Y8:  { Engineering_Product: 3100000, Design_UX_QA: 1100000, Marketing_and_Customer_Acquisition: 7000000, Sales_and_Business_Development: 3000000, General_and_Administrative: 1050000, Legal_Compliance_Accounting: 600000, Hosting_Infrastructure_DevOps: 1200000, Office_Rent_Utilities: 300000, Software_Licenses_Tools: 420000, Travel_Conferences_Events: 400000, Customer_Support_Success: 1200000 },
@@ -75,13 +75,13 @@ export default function CleeriFinanceDashboard() {
       Y10: { Engineering_Product: 4800000, Design_UX_QA: 1750000, Marketing_and_Customer_Acquisition: 14000000, Sales_and_Business_Development: 5600000, General_and_Administrative: 1800000, Legal_Compliance_Accounting: 1150000, Hosting_Infrastructure_DevOps: 2400000, Office_Rent_Utilities: 420000, Software_Licenses_Tools: 720000, Travel_Conferences_Events: 900000, Customer_Support_Success: 2400000 },
     } as Record<YearKey, Record<string, number>>,
 
-    // Explicit per‑year order for OPEX keys (persisted with localStorage)
+    // Explicit per‑year order for OPEX keys — empty for Y1–Y5; derived from DB on load
     opexOrder: {
-      Y1:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
-      Y2:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
-      Y3:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
-      Y4:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
-      Y5:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
+      Y1:  [],
+      Y2:  [],
+      Y3:  [],
+      Y4:  [],
+      Y5:  [],
       Y6:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
       Y7:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
       Y8:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
