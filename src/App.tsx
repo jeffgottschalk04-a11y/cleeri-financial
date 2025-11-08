@@ -107,18 +107,30 @@ export default function CleeriFinanceDashboard() {
   const [saveStatus, setSaveStatus] = useState<'idle'|'saving'|'saved'|'error'>('idle');
   const saveTimer = useRef<number | null>(null);
 
-  // Load on mount: prefer Supabase via helper, fall back to localStorage
+  // Load on mount: prefer Supabase via helper (DB-first), fall back to localStorage
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         const parsed = await loadAssumptions();
         if (parsed && mounted) {
+          // Normalize remote payload: if opexOrder is missing for a year, derive from keys
+          const YEARS: YearKey[] = ['Y1','Y2','Y3','Y4','Y5','Y6','Y7','Y8','Y9','Y10'];
+          const remote:any = JSON.parse(JSON.stringify(parsed));
+          remote.opex = remote.opex || {};
+          remote.opexOrder = remote.opexOrder || {};
+          YEARS.forEach((yk)=>{
+            const obj = remote.opex?.[yk];
+            if (obj && !Array.isArray(remote.opexOrder[yk])) {
+              remote.opexOrder[yk] = Object.keys(obj);
+            }
+          });
+          // DB-first: replace defaults entirely with remote (no merging),
+          // to ensure years 1–5 show exactly what's in the database
           setAssumptions((prev:any) => ({
             ...prev,
-            ...parsed,
-            opex: { ...prev.opex, ...(parsed?.opex||{}) },
-            opexOrder: { ...prev.opexOrder, ...(parsed?.opexOrder||{}) },
+            ...remote,
+            // keep TOTAL_SHARES-dependent constants intact but prefer remote model values
           }));
           return;
         }
