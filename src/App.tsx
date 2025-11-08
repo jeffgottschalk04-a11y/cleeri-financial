@@ -378,8 +378,23 @@ export default function CleeriFinanceDashboard() {
         </header>
         
         {/* Top actions: Cleeri deck button (links to public/cleeri-deck.pdf) */}
-        <div className="mb-6">
+        <div className="mb-6 flex items-center gap-3">
           <a href="/cleeri-deck.pdf" target="_blank" rel="noopener noreferrer" className="inline-block px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">View Cleeri Deck</a>
+          <button onClick={async () => {
+            try {
+              setSaveStatus('saving');
+              const res = await saveAssumptions(assumptions);
+              if (res === null) {
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); setSaveStatus('saved'); }
+                catch { setSaveStatus('error'); }
+              } else if ((res as any).error) {
+                setSaveStatus('error');
+              } else {
+                setSaveStatus('saved');
+              }
+            } catch (e) { setSaveStatus('error'); }
+          }} className="inline-block px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700">Save</button>
+          <div className="text-sm text-slate-500 ml-auto">&nbsp;</div>
         </div>
 
         {/* ASSUMPTIONS */}
