@@ -10,8 +10,11 @@
   The script uses VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY from process.env (or a .env file when using dotenv).
 */
 
-import('dotenv/config');
+import dotenv from 'dotenv';
+dotenv.config();
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
@@ -23,25 +26,12 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// TODO: Replace the sample `assumptions` object below with the exact expense values from the video.
-const assumptions = {
-  // minimal shape - the app will merge on load
-  opex: {
-    Y1: { /* fill values */ },
-    Y2: { /* fill values */ },
-    Y3: { /* fill values */ },
-    Y4: { /* fill values */ },
-    Y5: { /* fill values */ },
-    Y6: { /* fill values */ },
-    Y7: { /* fill values */ },
-    Y8: { /* fill values */ },
-    Y9: { /* fill values */ },
-    Y10: { /* fill values */ },
-  },
-  opexOrder: {
-    Y1: [], Y2: [], Y3: [], Y4: [], Y5: [], Y6: [], Y7: [], Y8: [], Y9: [], Y10: []
-  }
-};
+const seedPath = path.resolve(process.cwd(), 'scripts', 'assumptions.seed.json');
+if (!fs.existsSync(seedPath)) {
+  console.error('Seed file not found:', seedPath);
+  process.exit(1);
+}
+const assumptions = JSON.parse(fs.readFileSync(seedPath, 'utf-8'));
 
 (async () => {
   try {
