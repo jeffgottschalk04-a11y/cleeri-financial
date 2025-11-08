@@ -24,7 +24,7 @@ export async function loadAssumptions(): Promise<any | null> {
     try {
       // upsert a single row with id 'default'
       const payload = { id: 'default', data: obj };
-      const { data, error } = await supabase.from('assumptions').upsert(payload, { returning: 'minimal' });
+    const { data, error } = await supabase.from('assumptions').upsert(payload);
       if (error) console.error('Supabase saveAssumptions error', error);
       return { data, error };
     } catch (err) {
