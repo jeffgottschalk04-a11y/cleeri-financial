@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { loadAssumptions, saveAssumptions } from "./lib/db";
+import supabase from "./lib/supabase";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 
 /**
@@ -366,8 +367,10 @@ export default function CleeriFinanceDashboard() {
         <header className="mb-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl md:text-3xl font-semibold">Cleeri • 10‑Year Finance & SAFE Dashboard</h1>
-            <div className="text-sm text-slate-500">Total Shares Issued: <span className="font-medium">{TOTAL_SHARES.toLocaleString()}</span>
-              <span className="ml-3 text-xs text-slate-400">
+            <div className="flex items-center gap-3 text-sm text-slate-600">
+              <div>Total Shares Issued: <span className="font-medium">{TOTAL_SHARES.toLocaleString()}</span></div>
+              <div className={`ml-2 rounded-full px-2 py-0.5 text-xs border ${supabase ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>{supabase ? 'Supabase: connected' : 'Supabase: not configured'}</div>
+              <span className="ml-1 text-xs text-slate-400">
                 {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Save failed' : ''}
               </span>
             </div>
@@ -394,6 +397,17 @@ export default function CleeriFinanceDashboard() {
               }
             } catch (e) { setSaveStatus('error'); }
           }} className="inline-block px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700">Save</button>
+          <button onClick={async () => {
+            const parsed = await loadAssumptions();
+            if (parsed) {
+              setAssumptions((prev:any) => ({
+                ...prev,
+                ...parsed,
+                opex: { ...prev.opex, ...(parsed?.opex||{}) },
+                opexOrder: { ...prev.opexOrder, ...(parsed?.opexOrder||{}) },
+              }));
+            }
+          }} className="inline-block px-3 py-2 rounded-md bg-slate-200 text-slate-800 hover:bg-slate-300">Reload from Supabase</button>
           <div className="text-sm text-slate-500 ml-auto">&nbsp;</div>
         </div>
 
