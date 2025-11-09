@@ -112,7 +112,17 @@ export default function CleeriFinanceDashboard() {
     let mounted = true;
     (async () => {
       try {
-        const parsed = await loadAssumptions();
+        let parsed = await loadAssumptions();
+        if (!parsed) {
+          // Fallback: fetch static assumptions JSON when Supabase not configured
+          try {
+            const resp = await fetch('/assumptions.json');
+            if (resp.ok) {
+              const json = await resp.json();
+              parsed = json;
+            }
+          } catch {/* ignore */}
+        }
         if (parsed && mounted) {
           // Normalize remote payload: if opexOrder is missing for a year, derive from keys
           const YEARS: YearKey[] = ['Y1','Y2','Y3','Y4','Y5','Y6','Y7','Y8','Y9','Y10'];
