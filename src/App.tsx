@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { loadAssumptions, saveAssumptions } from "./lib/db";
-import supabase from "./lib/supabase";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 
 /**
@@ -106,6 +105,9 @@ export default function CleeriFinanceDashboard() {
   // ---------- Persistence (localStorage fallback, Supabase when configured)
   const [saveStatus, setSaveStatus] = useState<'idle'|'saving'|'saved'|'error'>('idle');
   const saveTimer = useRef<number | null>(null);
+  // Manual save feedback (button + toast)
+  const [manualSave, setManualSave] = useState<'idle'|'saving'|'saved'|'error'>('idle');
+  const [showSavedToast, setShowSavedToast] = useState(false);
 
   // Load on mount: prefer Supabase via helper (DB-first), fall back to localStorage
   useEffect(() => {
@@ -391,10 +393,6 @@ export default function CleeriFinanceDashboard() {
             <h1 className="text-2xl md:text-3xl font-semibold">Cleeri • 10‑Year Finance & SAFE Dashboard</h1>
             <div className="flex items-center gap-3 text-sm text-slate-600">
               <div>Total Shares Issued: <span className="font-medium">{TOTAL_SHARES.toLocaleString()}</span></div>
-              <div className={`ml-2 rounded-full px-2 py-0.5 text-xs border ${supabase ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>{supabase ? 'Supabase: connected' : 'Supabase: not configured'}</div>
-              <span className="ml-1 text-xs text-slate-400">
-                {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Save failed' : ''}
-              </span>
             </div>
           </div>
           <div className="mt-4 flex flex-col gap-3">
@@ -407,29 +405,50 @@ export default function CleeriFinanceDashboard() {
           <a href="/cleeri-deck.pdf" target="_blank" rel="noopener noreferrer" className="inline-block px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">View Cleeri Deck</a>
           <button onClick={async () => {
             try {
-              setSaveStatus('saving');
+              setManualSave('saving');
               const res = await saveAssumptions(assumptions);
               if (res === null) {
-                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); setSaveStatus('saved'); }
-                catch { setSaveStatus('error'); }
+                // fallback to local storage when Supabase not configured
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); setManualSave('saved'); }
+                catch { setManualSave('error'); }
               } else if ((res as any).error) {
-                setSaveStatus('error');
+                setManualSave('error');
               } else {
-                setSaveStatus('saved');
+                setManualSave('saved');
               }
-            } catch (e) { setSaveStatus('error'); }
-          }} className="inline-block px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700">Save</button>
-          <button onClick={async () => {
-            const parsed = await loadAssumptions();
-            if (parsed) {
-              setAssumptions((prev:any) => ({
-                ...prev,
-                ...parsed,
-                opex: { ...prev.opex, ...(parsed?.opex||{}) },
-                opexOrder: { ...prev.opexOrder, ...(parsed?.opexOrder||{}) },
-              }));
-            }
-          }} className="inline-block px-3 py-2 rounded-md bg-slate-200 text-slate-800 hover:bg-slate-300">Reload from Supabase</button>
+            } catch (e) { setManualSave('error'); }
+            // transient toast feedback
+            setShowSavedToast(true);
+            window.setTimeout(() => { setShowSavedToast(false); setManualSave('idle'); }, 1500);
+          }}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-white transition-colors
+              ${manualSave==='saving' ? 'bg-emerald-600 opacity-90' : manualSave==='saved' ? 'bg-emerald-600' : manualSave==='error' ? 'bg-rose-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+            disabled={manualSave==='saving'}>
+            {manualSave==='saving' ? (
+              <>
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                <span>Saving…</span>
+              </>
+            ) : manualSave==='saved' ? (
+              <>
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.2 7.2a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l2.293 2.293 6.493-6.493a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+                <span>Saved</span>
+              </>
+            ) : manualSave==='error' ? (
+              <>
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-5h2v2H9v-2zm0-6h2v4H9V7z" clipRule="evenodd"/></svg>
+                <span>Save failed</span>
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h6a2 2 0 002-2v-3h2.586a1 1 0 00.707-1.707l-3.586-3.586A2 2 0 0011 6H9V5a2 2 0 00-2-2H4z"/></svg>
+                <span>Save changes</span>
+              </>
+            )}
+          </button>
           <div className="text-sm text-slate-500 ml-auto">&nbsp;</div>
         </div>
 
@@ -717,6 +736,15 @@ export default function CleeriFinanceDashboard() {
           First two years revenue is Exchange‑only; subscriptions begin in Year 3. SAFE values reflect shares at cap times per‑share price from the selected valuation mode.
         </footer>
       </div>
+      {/* Saved toast (only on manual save) */}
+      {showSavedToast && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800 shadow-sm">
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.2 7.2a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l2.293 2.293 6.493-6.493a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+            <span className="text-sm font-medium">Saved</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
