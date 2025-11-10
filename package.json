@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "seed": "node scripts/seed.js",
+  "update:y1": "node scripts/updateY1.js",
     "fix:opex-order": "node scripts/fixOpexOrder.js",
     "lint": "eslint .",
     "preview": "vite preview"
