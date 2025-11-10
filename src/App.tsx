@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { loadAssumptions, saveAssumptions } from "./lib/db";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 
