@@ -1,7 +1,7 @@
-import supabase from './supabase';
+import supabase, { SUPABASE_URL, SUPABASE_KEY } from './supabase';
 
 // Expose a simple flag so callers can differentiate missing configuration
-export const isSupabaseConfigured = !!supabase;
+// (note) Supabase client may be null when env is missing; functions guard accordingly.
 
 export async function loadAssumptions(): Promise<any | null> {
   if (!supabase) return null;
@@ -31,7 +31,34 @@ export async function saveAssumptions(obj: any): Promise<{ data: any; error: any
       .upsert(payload, { onConflict: 'id' })
       .select('data')
       .single();
-    if (error) console.error('Supabase saveAssumptions error', error);
+    if (error) {
+      console.error('Supabase saveAssumptions error', error);
+      // Fallback: attempt direct REST call if we still have URL + KEY
+      if (SUPABASE_URL && SUPABASE_KEY) {
+        try {
+          const restResp = await fetch(`${SUPABASE_URL}/rest/v1/assumptions?id=eq.default`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation',
+            },
+            body: JSON.stringify({ data: obj }),
+          });
+          if (!restResp.ok) {
+            const text = await restResp.text();
+            console.error('REST fallback save failed', restResp.status, text);
+            return { data: null, error: { message: 'REST_FALLBACK_FAILED', status: restResp.status, body: text } } as any;
+          }
+          const json = await restResp.json();
+          return { data: json?.[0]?.data ?? null, error: null };
+        } catch (restErr) {
+          console.error('REST fallback unexpected error', restErr);
+          return { data: null, error: { message: 'REST_FALLBACK_EXCEPTION', detail: String(restErr) } } as any;
+        }
+      }
+    }
     return { data, error };
   } catch (err) {
     console.error('saveAssumptions unexpected error', err);
