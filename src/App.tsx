@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { loadAssumptions, saveAssumptions } from "./lib/db";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 
@@ -60,13 +60,13 @@ export default function CleeriFinanceDashboard() {
     planMixY4: { pro: 0.7, plus: 0.3 },
     planMixY5: { pro: 0.6, plus: 0.4 },
 
-    // OPEX (populated from Cleeri 10-Year OPEX Forecast PDF)
+    // OPEX defaults — leave Y1–Y5 empty so DB values are the source of truth
     opex: {
-      Y1:  { Engineering_Product: 120000, Design_UX_QA: 40000, Marketing_and_Customer_Acquisition: 60000, Sales_and_Business_Development: 30000, General_and_Administrative: 25000, Legal_Compliance_Accounting: 10000, Hosting_Infrastructure_DevOps: 15000, Office_Rent_Utilities: 12000, Software_Licenses_Tools: 8000, Travel_Conferences_Events: 5000, Customer_Support_Success: 15000 },
-      Y2:  { Engineering_Product: 240000, Design_UX_QA: 80000, Marketing_and_Customer_Acquisition: 120000, Sales_and_Business_Development: 60000, General_and_Administrative: 50000, Legal_Compliance_Accounting: 20000, Hosting_Infrastructure_DevOps: 30000, Office_Rent_Utilities: 24000, Software_Licenses_Tools: 16000, Travel_Conferences_Events: 10000, Customer_Support_Success: 30000 },
-      Y3:  { Engineering_Product: 420000, Design_UX_QA: 140000, Marketing_and_Customer_Acquisition: 240000, Sales_and_Business_Development: 120000, General_and_Administrative: 100000, Legal_Compliance_Accounting: 40000, Hosting_Infrastructure_DevOps: 60000, Office_Rent_Utilities: 48000, Software_Licenses_Tools: 32000, Travel_Conferences_Events: 20000, Customer_Support_Success: 60000 },
-      Y4:  { Engineering_Product: 720000, Design_UX_QA: 240000, Marketing_and_Customer_Acquisition: 500000, Sales_and_Business_Development: 300000, General_and_Administrative: 180000, Legal_Compliance_Accounting: 80000, Hosting_Infrastructure_DevOps: 120000, Office_Rent_Utilities: 72000, Software_Licenses_Tools: 64000, Travel_Conferences_Events: 40000, Customer_Support_Success: 120000 },
-      Y5:  { Engineering_Product: 1150000, Design_UX_QA: 400000, Marketing_and_Customer_Acquisition: 1200000, Sales_and_Business_Development: 600000, General_and_Administrative: 300000, Legal_Compliance_Accounting: 150000, Hosting_Infrastructure_DevOps: 240000, Office_Rent_Utilities: 120000, Software_Licenses_Tools: 120000, Travel_Conferences_Events: 80000, Customer_Support_Success: 240000 },
+      Y1:  {},
+      Y2:  {},
+      Y3:  {},
+      Y4:  {},
+      Y5:  {},
       Y6:  { Engineering_Product: 1750000, Design_UX_QA: 600000, Marketing_and_Customer_Acquisition: 2500000, Sales_and_Business_Development: 1200000, General_and_Administrative: 500000, Legal_Compliance_Accounting: 250000, Hosting_Infrastructure_DevOps: 450000, Office_Rent_Utilities: 180000, Software_Licenses_Tools: 200000, Travel_Conferences_Events: 150000, Customer_Support_Success: 450000 },
       Y7:  { Engineering_Product: 2400000, Design_UX_QA: 840000, Marketing_and_Customer_Acquisition: 4500000, Sales_and_Business_Development: 2000000, General_and_Administrative: 750000, Legal_Compliance_Accounting: 400000, Hosting_Infrastructure_DevOps: 800000, Office_Rent_Utilities: 240000, Software_Licenses_Tools: 300000, Travel_Conferences_Events: 250000, Customer_Support_Success: 800000 },
       Y8:  { Engineering_Product: 3100000, Design_UX_QA: 1100000, Marketing_and_Customer_Acquisition: 7000000, Sales_and_Business_Development: 3000000, General_and_Administrative: 1050000, Legal_Compliance_Accounting: 600000, Hosting_Infrastructure_DevOps: 1200000, Office_Rent_Utilities: 300000, Software_Licenses_Tools: 420000, Travel_Conferences_Events: 400000, Customer_Support_Success: 1200000 },
@@ -74,13 +74,13 @@ export default function CleeriFinanceDashboard() {
       Y10: { Engineering_Product: 4800000, Design_UX_QA: 1750000, Marketing_and_Customer_Acquisition: 14000000, Sales_and_Business_Development: 5600000, General_and_Administrative: 1800000, Legal_Compliance_Accounting: 1150000, Hosting_Infrastructure_DevOps: 2400000, Office_Rent_Utilities: 420000, Software_Licenses_Tools: 720000, Travel_Conferences_Events: 900000, Customer_Support_Success: 2400000 },
     } as Record<YearKey, Record<string, number>>,
 
-    // Explicit per‑year order for OPEX keys (persisted with localStorage)
+    // Explicit per‑year order for OPEX keys — empty for Y1–Y5; derived from DB on load
     opexOrder: {
-      Y1:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
-      Y2:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
-      Y3:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
-      Y4:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
-      Y5:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
+      Y1:  [],
+      Y2:  [],
+      Y3:  [],
+      Y4:  [],
+      Y5:  [],
       Y6:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
       Y7:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
       Y8:  ["Engineering_Product","Design_UX_QA","Marketing_and_Customer_Acquisition","Sales_and_Business_Development","General_and_Administrative","Legal_Compliance_Accounting","Hosting_Infrastructure_DevOps","Office_Rent_Utilities","Software_Licenses_Tools","Travel_Conferences_Events","Customer_Support_Success"],
@@ -103,23 +103,39 @@ export default function CleeriFinanceDashboard() {
   });
 
   // ---------- Persistence (localStorage fallback, Supabase when configured)
-  const [saveStatus, setSaveStatus] = useState<'idle'|'saving'|'saved'|'error'>('idle');
-  const saveTimer = useRef<number | null>(null);
+  // Autosave removed — no timer needed
+  // Manual save feedback (button + toast)
+  const [manualSave, setManualSave] = useState<'idle'|'saving'|'saved'|'error'>('idle');
+  const [showSavedToast, setShowSavedToast] = useState(false);
 
-  // Load on mount: prefer Supabase via helper, fall back to localStorage
+  // Load on mount: prefer Supabase via helper (DB-first), fall back to localStorage; no autosave.
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const parsed = await loadAssumptions();
+        let parsed = await loadAssumptions();
+        if (!parsed) {
+          try {
+            const resp = await fetch('/assumptions.json');
+            if (resp.ok) parsed = await resp.json();
+          } catch {/* ignore */}
+        }
         if (parsed && mounted) {
-          setAssumptions((prev:any) => ({
-            ...prev,
-            ...parsed,
-            opex: { ...prev.opex, ...(parsed?.opex||{}) },
-            opexOrder: { ...prev.opexOrder, ...(parsed?.opexOrder||{}) },
-          }));
-          return;
+          const YEARS: YearKey[] = ['Y1','Y2','Y3','Y4','Y5','Y6','Y7','Y8','Y9','Y10'];
+            const remote:any = JSON.parse(JSON.stringify(parsed));
+            remote.opex = remote.opex || {};
+            remote.opexOrder = remote.opexOrder || {};
+            YEARS.forEach((yk)=>{
+              const obj = remote.opex?.[yk];
+              if (obj && !Array.isArray(remote.opexOrder[yk])) {
+                remote.opexOrder[yk] = Object.keys(obj);
+              }
+            });
+            setAssumptions((prev:any) => ({
+              ...prev,
+              ...remote,
+            }));
+            return;
         }
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw && mounted) {
@@ -131,42 +147,11 @@ export default function CleeriFinanceDashboard() {
             opexOrder: { ...prev.opexOrder, ...(p?.opexOrder||{}) },
           }));
         }
-      } catch (e) {
-        /* ignore load errors */
-      }
+      } catch {/* ignore load errors */}
     })();
     return () => { mounted = false; };
   }, []);
-
-  // Debounced save: write to Supabase via helper when available, otherwise localStorage.
-  useEffect(() => {
-    // clear any pending timer
-    if (saveTimer.current) {
-      window.clearTimeout(saveTimer.current);
-      saveTimer.current = null;
-    }
-    setSaveStatus('saving');
-    // debounce writes by 1s
-    saveTimer.current = window.setTimeout(async () => {
-      try {
-        const res = await saveAssumptions(assumptions);
-        if (res === null) {
-          // saveAssumptions returns null when no supabase client; fall back to localStorage
-          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); setSaveStatus('saved'); }
-          catch { setSaveStatus('error'); }
-        } else if ((res as any).error) {
-          // supabase error
-          setSaveStatus('error');
-        } else {
-          setSaveStatus('saved');
-        }
-      } catch (e) {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); setSaveStatus('saved'); } catch { setSaveStatus('error'); }
-      }
-      saveTimer.current = null;
-    }, 1000) as unknown as number;
-    return () => { if (saveTimer.current) { window.clearTimeout(saveTimer.current); saveTimer.current = null; } };
-  }, [assumptions]);
+  // Manual save only; autosave effect removed per product decision.
 
   // ---------- Derived Helpers
   const paidPen = (yearIdx:number)=> {
@@ -366,10 +351,8 @@ export default function CleeriFinanceDashboard() {
         <header className="mb-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl md:text-3xl font-semibold">Cleeri • 10‑Year Finance & SAFE Dashboard</h1>
-            <div className="text-sm text-slate-500">Total Shares Issued: <span className="font-medium">{TOTAL_SHARES.toLocaleString()}</span>
-              <span className="ml-3 text-xs text-slate-400">
-                {saveStatus === 'saving' ? 'Saving…' : saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Save failed' : ''}
-              </span>
+            <div className="flex items-center gap-3 text-sm text-slate-600">
+              <div>Total Shares Issued: <span className="font-medium">{TOTAL_SHARES.toLocaleString()}</span></div>
             </div>
           </div>
           <div className="mt-4 flex flex-col gap-3">
@@ -381,19 +364,64 @@ export default function CleeriFinanceDashboard() {
         <div className="mb-6 flex items-center gap-3">
           <a href="/cleeri-deck.pdf" target="_blank" rel="noopener noreferrer" className="inline-block px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">View Cleeri Deck</a>
           <button onClick={async () => {
+            let succeeded = false;
             try {
-              setSaveStatus('saving');
+              setManualSave('saving');
               const res = await saveAssumptions(assumptions);
-              if (res === null) {
-                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); setSaveStatus('saved'); }
-                catch { setSaveStatus('error'); }
+              if (!res || (res as any).ok === false) {
+                console.error('Save failed: unexpected null result from saveAssumptions');
+                setManualSave('error');
               } else if ((res as any).error) {
-                setSaveStatus('error');
+                const msg = (res as any).error?.message;
+                if (msg === 'SUPABASE_NOT_CONFIGURED') {
+                  console.warn('Supabase not configured. Set VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY.');
+                }
+                console.error('Save error detail:', (res as any).error);
+                setManualSave('error');
               } else {
-                setSaveStatus('saved');
+                succeeded = true;
+                setManualSave('saved');
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); } catch {/* ignore */}
               }
-            } catch (e) { setSaveStatus('error'); }
-          }} className="inline-block px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700">Save</button>
+            } catch (e) {
+              console.error('Save exception', e);
+              setManualSave('error');
+            }
+            if (succeeded) {
+              setShowSavedToast(true);
+              window.setTimeout(() => { setShowSavedToast(false); setManualSave('idle'); }, 1500);
+            } else {
+              window.setTimeout(() => { setManualSave('idle'); }, 1200);
+            }
+          }}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-white transition-colors
+              ${manualSave==='saving' ? 'bg-emerald-600 opacity-90' : manualSave==='saved' ? 'bg-emerald-600' : manualSave==='error' ? 'bg-rose-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+            disabled={manualSave==='saving'}>
+            {manualSave==='saving' ? (
+              <>
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                <span>Saving…</span>
+              </>
+            ) : manualSave==='saved' ? (
+              <>
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.2 7.2a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l2.293 2.293 6.493-6.493a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+                <span>Saved</span>
+              </>
+            ) : manualSave==='error' ? (
+              <>
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-5h2v2H9v-2zm0-6h2v4H9V7z" clipRule="evenodd"/></svg>
+                <span>Save failed</span>
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h6a2 2 0 002-2v-3h2.586a1 1 0 00.707-1.707l-3.586-3.586A2 2 0 0011 6H9V5a2 2 0 00-2-2H4z"/></svg>
+                <span>Save changes</span>
+              </>
+            )}
+          </button>
           <div className="text-sm text-slate-500 ml-auto">&nbsp;</div>
         </div>
 
@@ -681,6 +709,15 @@ export default function CleeriFinanceDashboard() {
           First two years revenue is Exchange‑only; subscriptions begin in Year 3. SAFE values reflect shares at cap times per‑share price from the selected valuation mode.
         </footer>
       </div>
+      {/* Saved toast (only on manual save) */}
+      {showSavedToast && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800 shadow-sm">
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-7.2 7.2a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l2.293 2.293 6.493-6.493a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+            <span className="text-sm font-medium">Saved</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
