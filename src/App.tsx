@@ -103,48 +103,39 @@ export default function CleeriFinanceDashboard() {
   });
 
   // ---------- Persistence (localStorage fallback, Supabase when configured)
-  const [saveStatus, setSaveStatus] = useState<'idle'|'saving'|'saved'|'error'>('idle');
-  const saveTimer = useRef<number | null>(null);
+  // Autosave removed — no timer needed
   // Manual save feedback (button + toast)
   const [manualSave, setManualSave] = useState<'idle'|'saving'|'saved'|'error'>('idle');
   const [showSavedToast, setShowSavedToast] = useState(false);
 
-  // Load on mount: prefer Supabase via helper (DB-first), fall back to localStorage
+  // Load on mount: prefer Supabase via helper (DB-first), fall back to localStorage; no autosave.
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         let parsed = await loadAssumptions();
         if (!parsed) {
-          // Fallback: fetch static assumptions JSON when Supabase not configured
           try {
             const resp = await fetch('/assumptions.json');
-            if (resp.ok) {
-              const json = await resp.json();
-              parsed = json;
-            }
+            if (resp.ok) parsed = await resp.json();
           } catch {/* ignore */}
         }
         if (parsed && mounted) {
-          // Normalize remote payload: if opexOrder is missing for a year, derive from keys
           const YEARS: YearKey[] = ['Y1','Y2','Y3','Y4','Y5','Y6','Y7','Y8','Y9','Y10'];
-          const remote:any = JSON.parse(JSON.stringify(parsed));
-          remote.opex = remote.opex || {};
-          remote.opexOrder = remote.opexOrder || {};
-          YEARS.forEach((yk)=>{
-            const obj = remote.opex?.[yk];
-            if (obj && !Array.isArray(remote.opexOrder[yk])) {
-              remote.opexOrder[yk] = Object.keys(obj);
-            }
-          });
-          // DB-first: replace defaults entirely with remote (no merging),
-          // to ensure years 1–5 show exactly what's in the database
-          setAssumptions((prev:any) => ({
-            ...prev,
-            ...remote,
-            // keep TOTAL_SHARES-dependent constants intact but prefer remote model values
-          }));
-          return;
+            const remote:any = JSON.parse(JSON.stringify(parsed));
+            remote.opex = remote.opex || {};
+            remote.opexOrder = remote.opexOrder || {};
+            YEARS.forEach((yk)=>{
+              const obj = remote.opex?.[yk];
+              if (obj && !Array.isArray(remote.opexOrder[yk])) {
+                remote.opexOrder[yk] = Object.keys(obj);
+              }
+            });
+            setAssumptions((prev:any) => ({
+              ...prev,
+              ...remote,
+            }));
+            return;
         }
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw && mounted) {
@@ -156,42 +147,11 @@ export default function CleeriFinanceDashboard() {
             opexOrder: { ...prev.opexOrder, ...(p?.opexOrder||{}) },
           }));
         }
-      } catch (e) {
-        /* ignore load errors */
-      }
+      } catch {/* ignore load errors */}
     })();
     return () => { mounted = false; };
   }, []);
-
-  // Debounced save: write to Supabase via helper when available, otherwise localStorage.
-  useEffect(() => {
-    // clear any pending timer
-    if (saveTimer.current) {
-      window.clearTimeout(saveTimer.current);
-      saveTimer.current = null;
-    }
-    setSaveStatus('saving');
-    // debounce writes by 1s
-    saveTimer.current = window.setTimeout(async () => {
-      try {
-        const res = await saveAssumptions(assumptions);
-        if (res === null) {
-          // saveAssumptions returns null when no supabase client; fall back to localStorage
-          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); setSaveStatus('saved'); }
-          catch { setSaveStatus('error'); }
-        } else if ((res as any).error) {
-          // supabase error
-          setSaveStatus('error');
-        } else {
-          setSaveStatus('saved');
-        }
-      } catch (e) {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); setSaveStatus('saved'); } catch { setSaveStatus('error'); }
-      }
-      saveTimer.current = null;
-    }, 1000) as unknown as number;
-    return () => { if (saveTimer.current) { window.clearTimeout(saveTimer.current); saveTimer.current = null; } };
-  }, [assumptions]);
+  // Manual save only; autosave effect removed per product decision.
 
   // ---------- Derived Helpers
   const paidPen = (yearIdx:number)=> {
