@@ -9,6 +9,23 @@ export async function loadAssumptions(): Promise<any | null> {
     const { data, error } = await supabase.from('assumptions').select('data').eq('id', 'default').single();
     if (error) {
       console.error('Supabase loadAssumptions error', error);
+      // REST fallback for load
+      if (SUPABASE_URL && SUPABASE_KEY) {
+        try {
+          const resp = await fetch(`${SUPABASE_URL}/rest/v1/assumptions?id=eq.default&select=data`, {
+            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+          });
+          if (!resp.ok) {
+            console.error('REST fallback load failed', resp.status, await resp.text());
+            return null;
+          }
+          const json = await resp.json();
+          return json?.[0]?.data ?? null;
+        } catch (restErr) {
+          console.error('REST fallback load exception', restErr);
+          return null;
+        }
+      }
       return null;
     }
     return data?.data ?? null;
@@ -48,8 +65,25 @@ export async function saveAssumptions(obj: any): Promise<{ data: any; error: any
           });
           if (!restResp.ok) {
             const text = await restResp.text();
-            console.error('REST fallback save failed', restResp.status, text);
-            return { data: null, error: { message: 'REST_FALLBACK_FAILED', status: restResp.status, body: text } } as any;
+            console.warn('REST PATCH returned non-OK, will try POST upsert. Status:', restResp.status, text);
+            // Try POST upsert as second chance
+            const upsert = await fetch(`${SUPABASE_URL}/rest/v1/assumptions?on_conflict=id`, {
+              method: 'POST',
+              headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates,return=representation',
+              },
+              body: JSON.stringify({ id: 'default', data: obj }),
+            });
+            if (!upsert.ok) {
+              const body = await upsert.text();
+              console.error('REST fallback POST upsert failed', upsert.status, body);
+              return { data: null, error: { message: 'REST_FALLBACK_FAILED', status: upsert.status, body } } as any;
+            }
+            const row = await upsert.json();
+            return { data: row?.[0]?.data ?? null, error: null };
           }
           const json = await restResp.json();
           return { data: json?.[0]?.data ?? null, error: null };

@@ -383,8 +383,13 @@ export default function CleeriFinanceDashboard() {
               }
             } catch (e) { setManualSave('error'); }
             // transient toast feedback
-            setShowSavedToast(true);
-            window.setTimeout(() => { setShowSavedToast(false); setManualSave('idle'); }, 1500);
+            if (manualSave === 'saved') {
+              setShowSavedToast(true);
+              window.setTimeout(() => { setShowSavedToast(false); setManualSave('idle'); }, 1500);
+            } else {
+              // Reset button state after a moment on failure, but do not show a Saved toast
+              window.setTimeout(() => { setManualSave('idle'); }, 1200);
+            }
           }}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-white transition-colors
               ${manualSave==='saving' ? 'bg-emerald-600 opacity-90' : manualSave==='saved' ? 'bg-emerald-600' : manualSave==='error' ? 'bg-rose-600' : 'bg-emerald-600 hover:bg-emerald-700'}`}
