@@ -12,7 +12,7 @@ export async function loadAssumptions(): Promise<any | null> {
       // REST fallback for load
       if (SUPABASE_URL && SUPABASE_KEY) {
         try {
-          const resp = await fetch(`${SUPABASE_URL}/rest/v1/assumptions?id=eq.default&select=data`, {
+          const resp = await fetch(`${SUPABASE_URL}/rest/v1/assumptions?id=eq.default&select=data&apikey=${encodeURIComponent(SUPABASE_KEY)}`, {
             headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
           });
           if (!resp.ok) {
@@ -53,7 +53,7 @@ export async function saveAssumptions(obj: any): Promise<{ data: any; error: any
       // Fallback: attempt direct REST call if we still have URL + KEY
       if (SUPABASE_URL && SUPABASE_KEY) {
         try {
-          const restResp = await fetch(`${SUPABASE_URL}/rest/v1/assumptions?id=eq.default`, {
+          const restResp = await fetch(`${SUPABASE_URL}/rest/v1/assumptions?id=eq.default&apikey=${encodeURIComponent(SUPABASE_KEY)}`, {
             method: 'PATCH',
             headers: {
               'apikey': SUPABASE_KEY,
@@ -67,7 +67,7 @@ export async function saveAssumptions(obj: any): Promise<{ data: any; error: any
             const text = await restResp.text();
             console.warn('REST PATCH returned non-OK, will try POST upsert. Status:', restResp.status, text);
             // Try POST upsert as second chance
-            const upsert = await fetch(`${SUPABASE_URL}/rest/v1/assumptions?on_conflict=id`, {
+            const upsert = await fetch(`${SUPABASE_URL}/rest/v1/assumptions?on_conflict=id&apikey=${encodeURIComponent(SUPABASE_KEY)}`, {
               method: 'POST',
               headers: {
                 'apikey': SUPABASE_KEY,

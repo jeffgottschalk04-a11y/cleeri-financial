@@ -364,30 +364,33 @@ export default function CleeriFinanceDashboard() {
         <div className="mb-6 flex items-center gap-3">
           <a href="/cleeri-deck.pdf" target="_blank" rel="noopener noreferrer" className="inline-block px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">View Cleeri Deck</a>
           <button onClick={async () => {
+            let succeeded = false;
             try {
               setManualSave('saving');
               const res = await saveAssumptions(assumptions);
-              // When Supabase isn't configured or other errors occur, avoid a false "Saved" signal
               if (!res) {
                 console.error('Save failed: unexpected null result from saveAssumptions');
                 setManualSave('error');
               } else if ((res as any).error) {
                 const msg = (res as any).error?.message;
                 if (msg === 'SUPABASE_NOT_CONFIGURED') {
-                  console.warn('Supabase is not configured in this environment. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel (Production + Preview).');
+                  console.warn('Supabase not configured. Set VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY.');
                 }
+                console.error('Save error detail:', (res as any).error);
                 setManualSave('error');
               } else {
+                succeeded = true;
                 setManualSave('saved');
                 try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); } catch {/* ignore */}
               }
-            } catch (e) { setManualSave('error'); }
-            // transient toast feedback
-            if (manualSave === 'saved') {
+            } catch (e) {
+              console.error('Save exception', e);
+              setManualSave('error');
+            }
+            if (succeeded) {
               setShowSavedToast(true);
               window.setTimeout(() => { setShowSavedToast(false); setManualSave('idle'); }, 1500);
             } else {
-              // Reset button state after a moment on failure, but do not show a Saved toast
               window.setTimeout(() => { setManualSave('idle'); }, 1200);
             }
           }}
