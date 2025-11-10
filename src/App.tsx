@@ -368,7 +368,7 @@ export default function CleeriFinanceDashboard() {
             try {
               setManualSave('saving');
               const res = await saveAssumptions(assumptions);
-              if (!res) {
+              if (!res || (res as any).ok === false) {
                 console.error('Save failed: unexpected null result from saveAssumptions');
                 setManualSave('error');
               } else if ((res as any).error) {
