@@ -1,10 +1,20 @@
 import supabase, { SUPABASE_URL, SUPABASE_KEY } from './supabase';
 
+// Serverless proxy base (fallback)
+const API_PROXY = '/api/assumptions';
+
 // Expose a simple flag so callers can differentiate missing configuration
 // (note) Supabase client may be null when env is missing; functions guard accordingly.
 
 export async function loadAssumptions(): Promise<any | null> {
-  if (!supabase) return null;
+  if (!supabase) {
+    // Try serverless proxy
+    try {
+      const r = await fetch(API_PROXY);
+      if (r.ok) return await r.json();
+    } catch {/* ignore */}
+    return null;
+  }
   try {
     const { data, error } = await supabase.from('assumptions').select('data').eq('id', 'default').single();
     if (error) {
@@ -17,12 +27,21 @@ export async function loadAssumptions(): Promise<any | null> {
           });
           if (!resp.ok) {
             console.error('REST fallback load failed', resp.status, await resp.text());
+            // Try proxy before giving up
+            try {
+              const pr = await fetch(API_PROXY);
+              if (pr.ok) return await pr.json();
+            } catch {/* ignore */}
             return null;
           }
           const json = await resp.json();
           return json?.[0]?.data ?? null;
         } catch (restErr) {
           console.error('REST fallback load exception', restErr);
+          try {
+            const pr = await fetch(API_PROXY);
+            if (pr.ok) return await pr.json();
+          } catch {/* ignore */}
           return null;
         }
       }
@@ -38,7 +57,19 @@ export async function loadAssumptions(): Promise<any | null> {
 export async function saveAssumptions(obj: any): Promise<{ data: any; error: any } | null> {
   // If Supabase isn't configured, surface a structured error instead of silently returning null
   if (!supabase) {
-    return { data: null, error: { message: 'SUPABASE_NOT_CONFIGURED' } } as any;
+    // Use proxy to save
+    try {
+      const resp = await fetch(API_PROXY, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: obj }),
+      });
+      if (!resp.ok) return { data: null, error: { message: 'PROXY_SAVE_FAILED', status: resp.status, body: await resp.text() } } as any;
+      const saved = await resp.json();
+      return { data: saved, error: null };
+    } catch (e) {
+      return { data: null, error: { message: 'PROXY_EXCEPTION', detail: String(e) } } as any;
+    }
   }
   try {
     const payload = { id: 'default', data: obj };
