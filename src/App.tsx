@@ -367,14 +367,19 @@ export default function CleeriFinanceDashboard() {
             try {
               setManualSave('saving');
               const res = await saveAssumptions(assumptions);
-              if (res === null) {
-                // fallback to local storage when Supabase not configured
-                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); setManualSave('saved'); }
-                catch { setManualSave('error'); }
+              // When Supabase isn't configured or other errors occur, avoid a false "Saved" signal
+              if (!res) {
+                console.error('Save failed: unexpected null result from saveAssumptions');
+                setManualSave('error');
               } else if ((res as any).error) {
+                const msg = (res as any).error?.message;
+                if (msg === 'SUPABASE_NOT_CONFIGURED') {
+                  console.warn('Supabase is not configured in this environment. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel (Production + Preview).');
+                }
                 setManualSave('error');
               } else {
                 setManualSave('saved');
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(assumptions)); } catch {/* ignore */}
               }
             } catch (e) { setManualSave('error'); }
             // transient toast feedback
